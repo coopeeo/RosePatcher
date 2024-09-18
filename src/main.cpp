@@ -100,11 +100,17 @@ INITIALIZE_PLUGIN() {
   }
 
   WUPSStorageError storageRes;
-  if ((storageRes = WUPSStorageAPI::GetOrStoreDefault(CONNECT_TO_LATTE_CONFIG_ID, connectToLatte, CONNECT_TO_LATTE_DEFUALT_VALUE)) != WUPS_STORAGE_ERROR_SUCCESS) {
-    DEBUG_FUNCTION_LINE("GetOrStoreDefault failed: %s (%d)", WUPSStorageAPI_GetStatusStr(storageRes), storageRes);
+  if ((storageRes = WUPSStorageAPI::GetOrStoreDefault(
+           CONNECT_TO_LATTE_CONFIG_ID, connectToLatte,
+           CONNECT_TO_LATTE_DEFUALT_VALUE)) != WUPS_STORAGE_ERROR_SUCCESS) {
+    DEBUG_FUNCTION_LINE("GetOrStoreDefault failed: %s (%d)",
+                        WUPSStorageAPI_GetStatusStr(storageRes), storageRes);
   }
-  if ((storageRes = WUPSStorageAPI::GetOrStoreDefault(REPLACE_DLM_CONFIG_ID, replaceDownloadManagement, REPLACE_DLM_DEFAULT_VALUE)) != WUPS_STORAGE_ERROR_SUCCESS) {
-    DEBUG_FUNCTION_LINE("GetOrStoreDefault failed: %s (%d)", WUPSStorageAPI_GetStatusStr(storageRes), storageRes);
+  if ((storageRes = WUPSStorageAPI::GetOrStoreDefault(
+           REPLACE_DLM_CONFIG_ID, replaceDownloadManagement,
+           REPLACE_DLM_DEFAULT_VALUE)) != WUPS_STORAGE_ERROR_SUCCESS) {
+    DEBUG_FUNCTION_LINE("GetOrStoreDefault failed: %s (%d)",
+                        WUPSStorageAPI_GetStatusStr(storageRes), storageRes);
   }
 
   if (NotificationModule_InitLibrary() != NOTIFICATION_MODULE_RESULT_SUCCESS) {
@@ -112,9 +118,9 @@ INITIALIZE_PLUGIN() {
   }
 
   if (connectToLatte) {
-    StartNotificationThread("TVii patch enabled");
+    ShowNotification("TVii patch enabled");
   } else {
-    StartNotificationThread("TVii patch disabled");
+    ShowNotification("TVii patch disabled");
   }
 }
 
