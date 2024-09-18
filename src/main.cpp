@@ -99,6 +99,14 @@ INITIALIZE_PLUGIN() {
     DEBUG_FUNCTION_LINE("Failed to init config api");
   }
 
+  WUPSStorageError storageRes;
+  if ((storageRes = WUPSStorageAPI::GetOrStoreDefault(CONNECT_TO_LATTE_CONFIG_ID, connectToLatte, CONNECT_TO_LATTE_DEFUALT_VALUE)) != WUPS_STORAGE_ERROR_SUCCESS) {
+    DEBUG_FUNCTION_LINE("GetOrStoreDefault failed: %s (%d)", WUPSStorageAPI_GetStatusStr(storageRes), storageRes);
+  }
+  if ((storageRes = WUPSStorageAPI::GetOrStoreDefault(REPLACE_DLM_CONFIG_ID, replaceDownloadManagement, REPLACE_DLM_DEFAULT_VALUE)) != WUPS_STORAGE_ERROR_SUCCESS) {
+    DEBUG_FUNCTION_LINE("GetOrStoreDefault failed: %s (%d)", WUPSStorageAPI_GetStatusStr(storageRes), storageRes);
+  }
+
   if (NotificationModule_InitLibrary() != NOTIFICATION_MODULE_RESULT_SUCCESS) {
     DEBUG_FUNCTION_LINE("NotificationModule_InitLibrary failed :(");
   }
