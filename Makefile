@@ -19,7 +19,7 @@ WUMS_ROOT := $(DEVKITPRO)/wums
 # DATA is a list of directories containing data files
 # INCLUDES is a list of directories containing header files
 #-------------------------------------------------------------------------------
-TARGET		:=	vino-config-patcher
+TARGET		:=	RosePatcher
 BUILD		:=	build
 SOURCES		:=	src src/util
 DATA		:=	data
@@ -31,14 +31,14 @@ INCLUDES	:=	src
 CFLAGS	:=	-g -Wall -O2 -ffunction-sections \
 			$(MACHDEP)
 
-CFLAGS	+=	$(INCLUDE) -D__WIIU__ -D__WUT__ -D__WUPS__ 
+CFLAGS	+=	$(INCLUDE) -D__WIIU__ -D__WUT__ -D__WUPS__
 
 CXXFLAGS	:= $(CFLAGS)
 
 ASFLAGS	:=	-g $(ARCH)
-LDFLAGS	=	-g $(ARCH) $(RPXSPECS) -Wl,-Map,$(notdir $*.map) $(WUPSSPECS) 
+LDFLAGS	=	-g $(ARCH) $(RPXSPECS) -Wl,-Map,$(notdir $*.map) $(WUPSSPECS)
 
-LIBS	:= -lwups -lnotifications -lwut 
+LIBS	:= -lwups -lnotifications -lfunctionpatcher -lwut
 
 #-------------------------------------------------------------------------------
 # list of directories containing libraries, this must be the top level

@@ -2,11 +2,15 @@
 // Note: used some of Inkay, the Pretendo Network plugin source code as a base
 // and to make use of the notfications. Credit to Pretendo for developing Inkay
 #include <coreinit/debug.h>
+#include <coreinit/dynload.h>
 #include <coreinit/filesystem.h>
+#include <coreinit/memorymap.h>
 #include <coreinit/title.h>
 #include <sysapp/launch.h>
 #include <sysapp/switch.h>
 #include <vpad/input.h>
+
+#include <function_patcher/function_patching.h>
 
 #include <notifications/notifications.h>
 #include <wups.h>
@@ -18,14 +22,17 @@
 #include "Notification.h"
 #include "utils/logger.h"
 
-WUPS_PLUGIN_NAME("Vino Config Patcher");
-WUPS_PLUGIN_DESCRIPTION("TVii config patcher");
+WUPS_PLUGIN_NAME("Rose Patcher");
+WUPS_PLUGIN_DESCRIPTION("TVii config patcher for Project Rose");
 WUPS_PLUGIN_VERSION("v1.1");
 WUPS_PLUGIN_AUTHOR("Glitchii and Fangal");
 WUPS_PLUGIN_LICENSE("GPLv2");
 
-WUPS_USE_STORAGE("vcp");
+WUPS_USE_STORAGE("rosepatcher");
 WUPS_USE_WUT_DEVOPTAB();
+
+#define TVii_TITLE_ID 0x000500301001310A
+#define TVii_CLIENT_ID "87a44dad436407e4ec47ad42ed68bf8c"
 
 #define VINO_CONFIG_PATH "/vol/content/vino_config.txt"
 #define VINO_CONFIG_SD_PATH "/vol/external01/TVii/vino_config.txt"
@@ -66,7 +73,7 @@ ConfigMenuOpenedCallback(WUPSConfigCategoryHandle rootHandle) {
 
   try {
     root.add(WUPSConfigItemBoolean::Create(
-        CONNECT_TO_LATTE_CONFIG_ID, "Vino Config Patch Enabled",
+        CONNECT_TO_LATTE_CONFIG_ID, "Config Patch Enabled",
         CONNECT_TO_LATTE_DEFUALT_VALUE, connectToLatte, connectToLatteChanged));
     root.add(WUPSConfigItemBoolean::Create(
         REPLACE_DLM_CONFIG_ID, "Replace Download Management",
@@ -91,8 +98,9 @@ void ConfigMenuClosedCallback() {
 INITIALIZE_PLUGIN() {
   WHBLogUdpInit();
   WHBLogCafeInit();
+  FunctionPatcher_InitLibrary();
 
-  WUPSConfigAPIOptionsV1 configOptions = {.name = "vcp"};
+  WUPSConfigAPIOptionsV1 configOptions = {.name = "Rose Patcher"};
   if (WUPSConfigAPI_Init(configOptions, ConfigMenuOpenedCallback,
                          ConfigMenuClosedCallback) !=
       WUPSCONFIG_API_RESULT_SUCCESS) {
@@ -126,14 +134,27 @@ INITIALIZE_PLUGIN() {
 
 DEINITIALIZE_PLUGIN() {
   WHBLogUdpDeinit();
+  WHBLogCafeDeinit();
   NotificationModule_DeInitLibrary();
+  FunctionPatcher_DeInitLibrary();
 }
 
 ON_APPLICATION_START() {
   WHBLogUdpInit();
   WHBLogCafeInit();
 
-  DEBUG_FUNCTION_LINE("VCP: hihi");
+  DEBUG_FUNCTION_LINE("RosePatcher: hihi");
+}
+
+DECL_FUNCTION(int, AcquireIndependentServiceToken__Q2_2nn3actFPcPCcUibT4, uint8_t* token, const char* client_id)
+{
+
+    if (client_id && strcmp(client_id, TVii_CLIENT_ID) == 0) {
+        WHBLogPrintf("ReTViive: Faking service sucess for '%s'", client_id);
+        return 0;
+    }
+
+    return real_AcquireIndependentServiceToken__Q2_2nn3actFPcPCcUibT4(token, client_id);
 }
 
 DECL_FUNCTION(int32_t, _SYSSwitchTo, SysAppPFID pfid) {
@@ -198,6 +219,53 @@ DECL_FUNCTION(FSStatus, FSOpenFile, FSClient *client, FSCmdBlock *block,
 
   return real_FSOpenFile(client, block, path, mode, handle, errorMask);
 }
+
+DECL_FUNCTION(void, FSInit_TVii)
+{
+    OSDynLoad_Module NN_ACT = 0;
+    uint32_t AISTaddressVIR = 0;
+    uint32_t AISTaddress = 0;
+
+
+    // Call the original function
+    real_FSInit_TVii();
+    WHBLogPrintf("ReTViive: Trying to patch AcquireIndependentServiceToken via FSInit");
+    OSReport("ReTViive: Trying to patch AcquireIndependentServiceToken via FSInit");
+
+    // Acquire the nn_act module
+    if(OSDynLoad_Acquire("nn_act.rpl", &NN_ACT) != OS_DYNLOAD_OK) {
+        WHBLogPrintf("ReTViive: failed to acquire nn_act module");
+        OSReport("ReTViive: failed to acquire nn_act module");
+        return;
+    }
+
+    // Find the AcquireIndependentServiceToken function
+    if(OSDynLoad_FindExport(NN_ACT, OS_DYNLOAD_EXPORT_FUNC, "AcquireIndependentServiceToken__Q2_2nn3actFPcPCcUibT4", (void**)&AISTaddressVIR) != OS_DYNLOAD_OK) {
+        WHBLogPrintf("ReTViive: failed to find AcquireIndependentServiceToken function in nn_act");
+        OSReport("ReTViive: failed to find AcquireIndependentServiceToken function in nn_act");
+        return;
+    }
+    AISTaddress = OSEffectiveToPhysical(AISTaddressVIR);
+
+    OSReport("ReTViive: AISTaddress: %d AISTaddressVIR: %d", &AISTaddress, &AISTaddressVIR);
+
+    // Patch the function
+    function_replacement_data_t AISTpatch = REPLACE_FUNCTION_VIA_ADDRESS_FOR_PROCESS(AcquireIndependentServiceToken__Q2_2nn3actFPcPCcUibT4, AISTaddress, AISTaddressVIR, FP_TARGET_PROCESS_TVII);
+    PatchedFunctionHandle AISTpatchHandle = 0;
+    bool AISTpatchSuccess = false;
+    FunctionPatcher_AddFunctionPatch(&AISTpatch, &AISTpatchHandle, &AISTpatchSuccess);
+    if (AISTpatchSuccess == false) {
+        WHBLogPrintf("ReTViive: Failed to add patch.");
+        OSReport("ReTViive: Failed to add patch.");
+        return;
+    }
+    WHBLogPrintf("ReTViive: Patched AcquireIndependentServiceToken via FSInit");
+    OSReport("ReTViive: Patched AcquireIndependentServiceToken via FSInit");
+
+}
+
+WUPS_MUST_REPLACE_FOR_PROCESS(FSInit_TVii, WUPS_LOADER_LIBRARY_COREINIT, FSInit, WUPS_FP_TARGET_PROCESS_TVII);
+
 
 WUPS_MUST_REPLACE(_SYSSwitchTo, WUPS_LOADER_LIBRARY_SYSAPP, _SYSSwitchTo);
 WUPS_MUST_REPLACE_PHYSICAL_FOR_PROCESS(_SYSSwitchToOverlayFromHBM, 0x2E47373C,
