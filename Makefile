@@ -106,6 +106,11 @@ clean:
 	@rm -fr $(BUILD) $(TARGET).wps $(TARGET).elf
 
 #-------------------------------------------------------------------------------
+run: # need wiiload + wiiload plugin on the Wii U (get plugin at https://aroma.foryour.cafe/)
+#            ^^^^ (I don't know if it comes pre-installed with devkitpro without having the wii portion installed, so you can also get it from the hackmii installer https://bootmii.org/download)
+	@wiiload $(TARGET).wps
+
+#-------------------------------------------------------------------------------
 else
 .PHONY:	all
 
@@ -129,7 +134,13 @@ $(OFILES_SRC)	: $(HFILES_BIN)
 	@echo $(notdir $<)
 	@$(bin2o)
 
+%.txt.o	%_txt.h :	%.txt
+#-------------------------------------------------------------------------------
+	@echo $(notdir $<)
+	@$(bin2o)
+
 -include $(DEPENDS)
+
 
 #-------------------------------------------------------------------------------
 endif

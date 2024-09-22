@@ -1,0 +1,67 @@
+{
+  "env": {
+    "defaultIncludePath": [
+      "${workspaceFolder}/build/**",
+      "${workspaceFolder}/include/**",
+      "${workspaceFolder}/source/**"
+    ],
+    "defaultDefines": [],
+
+    "DEVKITPROWIN": "C:/devkitPro",
+    
+    /* Wii U paths and info */
+    "cafeIncludePaths": [
+      "${env:DEVKITPRO}/portlibs/ppc/include/**",
+      "${env:DEVKITPRO}/portlibs/wiiu/include/**",
+      "${env:DEVKITPRO}/wut/include/**",
+      "${env:DEVKITPRO}/wut/usr/include/**"
+    ],
+    "cafeIncludePathsWindows": [
+      "${env:DEVKITPROWIN}/portlibs/ppc/include/**",
+      "${env:DEVKITPROWIN}/portlibs/wiiu/include/**",
+      "${env:DEVKITPROWIN}/wut/include/**",
+      "${env:DEVKITPROWIN}/wut/usr/include/**"
+    ],
+    
+    "cafeDefines": ["__WIIU__"],
+
+    "wupsIncludePaths": [
+      "${env:DEVKITPRO}/wups/include/**"
+    ],
+    "wupsIncludePathsWindows": [
+      "${env:DEVKITPROWIN}/wups/include/**"
+    ],
+
+    "wumsIncludePaths": [
+      "${env:DEVKITPRO}/wums/include/**"
+    ],
+    "wumsIncludePathsWindows": [
+      "${env:DEVKITPROWIN}/wums/include/**"
+    ],
+    
+    "ppcCompilerPath": "${env:DEVKITPRO}/devkitPPC/bin/powerpc-eabi-g++",
+    "ppcCompilerPathWindows": "${env:DEVKITPROWIN}/devkitPPC/bin/powerpc-eabi-g++"
+  },
+
+  "configurations": [
+    {
+      "name": "Wii U (Windows)",
+      "includePath": ["${env:defaultIncludePath}", "${env:cafeIncludePathsWindows}", "${env:wupsIncludePathsWindows}", "${env:wumsIncludePathsWindows}"],
+      "defines": ["${env:defaultDefines}", "${env:cafeDefines}"],
+      "compilerPath": "${env:ppcCompilerPathWindows}",
+      "cStandard": "c11",
+      "cppStandard": "c++17",
+      "intelliSenseMode": "linux-gcc-arm"
+    },
+    {
+      "name": "Wii U (Linux)",
+      "includePath": ["${env:defaultIncludePath}", "${env:cafeIncludePaths}", "${env:wupsIncludePaths}", "${env:wumsIncludePaths}"],
+      "defines": ["${env:defaultDefines}", "${env:cafeDefines}"],
+      "compilerPath": "${env:ppcCompilerPath}",
+      "cStandard": "c11",
+      "cppStandard": "c++17",
+      "intelliSenseMode": "linux-gcc-arm"
+    }
+  ],
+  "version": 4
+}
