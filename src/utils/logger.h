@@ -20,11 +20,11 @@ extern "C" {
     } while (0)
 
 #define DEBUG_FUNCTION_LINE(FMT, ARGS...)do { \
-    WHBLogPrintf("Rosé Patcher - Debug - [%23s]%30s@L%04d: " FMT "",__FILENAME__,__FUNCTION__, __LINE__, ## ARGS); \
+    WHBLogPrintf("Rosé Patcher - Debug - [%s]%s@L%04d: " FMT "",__FILENAME__,__FUNCTION__, __LINE__, ## ARGS); \
     } while (0);
 
 #define DEBUG_FUNCTION_LINE_WRITE(FMT, ARGS...)do { \
-    WHBLogWritef("Rosé Patcher - Debug - [%23s]%30s@L%04d: " FMT "",__FILENAME__,__FUNCTION__, __LINE__, ## ARGS); \
+    WHBLogWritef("Rosé Patcher - Debug - [%s]%s@L%04d: " FMT "",__FILENAME__,__FUNCTION__, __LINE__, ## ARGS); \
     } while (0);
 
 #define DEBUG(FMT, ARGS...)do { \

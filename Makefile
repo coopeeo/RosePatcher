@@ -139,6 +139,11 @@ $(OFILES_SRC)	: $(HFILES_BIN)
 	@echo $(notdir $<)
 	@$(bin2o)
 
+%.der.o	%_der.h :	%.der
+#-------------------------------------------------------------------------------
+	@echo $(notdir $<)
+	@$(bin2o)
+
 -include $(DEPENDS)
 
 

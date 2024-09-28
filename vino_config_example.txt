@@ -1,6 +1,5 @@
 #ur0 is default
 url0:https://yoursitehere
-# ^ replace yoursitehere with your website
 
 # on/off debug print of client
 CallbackDebugPrint:0

@@ -38,6 +38,12 @@ WUPS_USE_WUT_DEVOPTAB();
 
 #define VINO_CONFIG_PATH "/vol/content/vino_config.txt"
 
+#define FAKE_INDEPENDANT_SERVICE_TOKEN_CONFIG_ID "fake_independant_service_token"
+#define FAKE_INDEPENDANT_SERVICE_TOKEN_DEFUALT_VALUE false
+
+#define PATCH_CA_CONFIG_ID "patch_ca"
+#define PATCH_CA_DEFUALT_VALUE true
+
 #define CONNECT_TO_ROSE_CONFIG_ID "connect_to_rose"
 #define CONNECT_TO_ROSE_DEFUALT_VALUE true
 
@@ -49,12 +55,32 @@ char mPath[128] = "";
 
 bool hasPatchedAIST = false;
 
-static std::optional<FSFileHandle> vino_handle{};
+static std::optional<FSFileHandle> config_handle{};
+static std::optional<FSFileHandle> ca_handle{};
 
 // Settings
-bool connectToRose = true;
-bool replaceDownloadManagement = false;
+bool patchAIST = FAKE_INDEPENDANT_SERVICE_TOKEN_DEFUALT_VALUE;
+bool patchCA = PATCH_CA_DEFUALT_VALUE;
+bool connectToRose = CONNECT_TO_ROSE_DEFUALT_VALUE;
+bool replaceDownloadManagement = REPLACE_DLM_DEFAULT_VALUE;
 bool needRelaunch = false;
+
+// patch INDEPENDANT SERVICE TOKEN setting event
+void patchAISTChanged(ConfigItemBoolean *item, bool newValue) {
+  if (newValue != patchAIST) {
+    WUPSStorageAPI::Store(FAKE_INDEPENDANT_SERVICE_TOKEN_CONFIG_ID, newValue);
+  }
+
+  patchAIST = newValue;
+}
+// Patch root CA setting event
+void patchCAChanged(ConfigItemBoolean *item, bool newValue) {
+  if (patchCA != newValue) {
+    WUPSStorageAPI::Store(PATCH_CA_CONFIG_ID, newValue);
+  }
+
+  patchCA = newValue;
+}
 
 // Connect to Rose setting event
 void connectToRoseChanged(ConfigItemBoolean *item, bool newValue) {
@@ -80,6 +106,13 @@ WUPSConfigAPICallbackStatus ConfigMenuOpenedCallback(WUPSConfigCategoryHandle ro
 
   try {
     // Add setting items
+    root.add(WUPSConfigItemBoolean::Create(
+        FAKE_INDEPENDANT_SERVICE_TOKEN_CONFIG_ID, "Fake Independent Service Token Patch Enabled",
+        FAKE_INDEPENDANT_SERVICE_TOKEN_DEFUALT_VALUE, patchAIST, patchAISTChanged));
+    root.add(WUPSConfigItemBoolean::Create(
+        PATCH_CA_CONFIG_ID, "Root CA Patch Enabled",
+        PATCH_CA_DEFUALT_VALUE, patchCA,
+        patchCAChanged));
     root.add(WUPSConfigItemBoolean::Create(
         CONNECT_TO_ROSE_CONFIG_ID, "Config Patch Enabled",
         CONNECT_TO_ROSE_DEFUALT_VALUE, connectToRose, connectToRoseChanged));
@@ -119,6 +152,18 @@ INITIALIZE_PLUGIN() {
 
   // Add get saved values
   WUPSStorageError storageRes;
+  if ((storageRes = WUPSStorageAPI::GetOrStoreDefault(
+           FAKE_INDEPENDANT_SERVICE_TOKEN_CONFIG_ID, patchAIST,
+           FAKE_INDEPENDANT_SERVICE_TOKEN_DEFUALT_VALUE)) != WUPS_STORAGE_ERROR_SUCCESS) {
+    DEBUG_FUNCTION_LINE("GetOrStoreDefault failed: %s (%d)",
+                        WUPSStorageAPI_GetStatusStr(storageRes), storageRes);
+  }
+  if ((storageRes = WUPSStorageAPI::GetOrStoreDefault(
+           PATCH_CA_CONFIG_ID, patchCA,
+           PATCH_CA_DEFUALT_VALUE)) != WUPS_STORAGE_ERROR_SUCCESS) {
+    DEBUG_FUNCTION_LINE("GetOrStoreDefault failed: %s (%d)",
+                        WUPSStorageAPI_GetStatusStr(storageRes), storageRes);
+  }
   if ((storageRes = WUPSStorageAPI::GetOrStoreDefault(
            CONNECT_TO_ROSE_CONFIG_ID, connectToRose,
            CONNECT_TO_ROSE_DEFUALT_VALUE)) != WUPS_STORAGE_ERROR_SUCCESS) {
@@ -202,11 +247,20 @@ DECL_FUNCTION(int32_t, _SYSSwitchToOverlayFromHBM, SysAppPFID pfid) {
 DECL_FUNCTION(FSStatus, FSOpenFile_VINO, FSClient *client, FSCmdBlock *block,
               const char *path, const char *mode, FSFileHandle *handle,
               FSErrorFlag errorMask) {
+
+  DEBUG("Wii wants to open file: %s", path);
+  
   if (connectToRose && strcmp(VINO_CONFIG_PATH, path) == 0) {
     FSStatus res = real_FSOpenFile_VINO(client, block, path, mode, handle, errorMask);
-    vino_handle = *handle;
+    config_handle = *handle;
     return res;
   }
+  
+  /*if (patchCA && strcmp(VINO_CONFIG_PATH, path) == 0) {
+    FSStatus res = real_FSOpenFile_VINO(client, block, path, mode, handle, errorMask);
+    config_handle = *handle;
+    return res;
+  }*/
 
   return real_FSOpenFile_VINO(client, block, path, mode, handle, errorMask);
 }
@@ -217,7 +271,7 @@ DECL_FUNCTION(FSStatus, FSReadFile_VINO, FSClient *client, FSCmdBlock *block, ui
         DEBUG_FUNCTION_LINE("Falied to patch vino config. Size is not 1");
     }
 
-    if (vino_handle && *vino_handle == handle) {
+    if (config_handle && *config_handle == handle) {
         DEBUG_FUNCTION_LINE("Trying to read vino config detected, returning patched data.");
         strlcpy((char *) buffer, (const char *) rose_config_txt, size * count);
         return (FSStatus) count;
@@ -226,9 +280,9 @@ DECL_FUNCTION(FSStatus, FSReadFile_VINO, FSClient *client, FSCmdBlock *block, ui
 }
 
 DECL_FUNCTION(FSStatus, FSCloseFile_VINO, FSClient *client, FSCmdBlock *block, FSFileHandle handle, FSErrorFlag errorMask) {
-    if (handle == vino_handle) {
+    if (handle == config_handle) {
         DEBUG("Closing Vino config file and resetting handle");
-        vino_handle.reset();
+        config_handle.reset();
     }
     return real_FSCloseFile_VINO(client, block, handle, errorMask);
 }
@@ -255,6 +309,11 @@ DECL_FUNCTION(void, FSInit_VINO)
 
     // Call the original function
     real_FSInit_VINO();
+
+    if (!patchAIST) {
+        DEBUG_FUNCTION_LINE("AcquireIndependentServiceToken patch is disabled, skipping...");
+        return;
+    }
 
     if (hasPatchedAIST) {
         DEBUG_FUNCTION_LINE("FSInit_VINO has already been patched, and patched AcquireIndependentServiceToken");
@@ -300,7 +359,10 @@ DECL_FUNCTION(void, FSInit_VINO)
 
     bool AISTpatchSuccess = false;
     
-    FunctionPatcher_AddFunctionPatch(&AISTpatch, &AISTpatchHandle, &AISTpatchSuccess);
+    if(FunctionPatcher_AddFunctionPatch(&AISTpatch, &AISTpatchHandle, &AISTpatchSuccess) != FunctionPatcherStatus::FUNCTION_PATCHER_RESULT_SUCCESS) {
+        DEBUG_FUNCTION_LINE("Failed to add patch.");
+        return;
+    }
 
     if (AISTpatchSuccess == false) {
         DEBUG_FUNCTION_LINE("Failed to add patch.");

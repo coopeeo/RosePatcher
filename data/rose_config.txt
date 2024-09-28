@@ -1,6 +1,5 @@
 #ur0 is default
-url0:http://projectrose.cafe
-# ^ replace yoursitehere with your website
+url0:http://tvii.l1.us.projectrose.cafe
 
 # on/off debug print of client
 CallbackDebugPrint:0
