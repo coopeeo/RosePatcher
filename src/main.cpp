@@ -34,8 +34,14 @@ WUPS_PLUGIN_LICENSE("GPLv2");
 WUPS_USE_STORAGE("rosepatcher");
 WUPS_USE_WUT_DEVOPTAB();
 
-#define VINO_TITLE_ID 0x000500301001310A
-#define VINO_CLIENT_ID "87a44dad436407e4ec47ad42ed68bf8c"
+#define VINO_TITLE_ID_JP 0x000500301001300A
+#define VINO_CLIENT_ID_JP "547e315c1966905040e2d48dff24439a"
+
+#define VINO_TITLE_ID_US 0x000500301001310A
+#define VINO_CLIENT_ID_US "87a44dad436407e4ec47ad42ed68bf8c"
+
+#define VINO_TITLE_ID_EU 0x000500301001320A
+#define VINO_CLIENT_ID_EU "8bc9387d0797e003c3210acfae01e109"
 
 #define VINO_CONFIG_PATH "/vol/content/vino_config.txt"
 #define VINO_CA_PATH "/vol/content/rootca/Go_Daddy_Root_Certificate_Authority_-_G2.der"
@@ -138,6 +144,18 @@ void ConfigMenuClosedCallback() {
     _SYSLaunchTitleWithStdArgsInNoSplash(OSGetTitleID(), nullptr);
     needRelaunch = false;
   }
+}
+
+bool isVinoClientID(const char *client_id) {
+  return strcmp(client_id, VINO_CLIENT_ID_JP) == 0 ||
+         strcmp(client_id, VINO_CLIENT_ID_US) == 0 ||
+         strcmp(client_id, VINO_CLIENT_ID_EU) == 0;
+}
+
+bool isVinoTitleID(uint32_t title_id) {
+  return title_id == VINO_TITLE_ID_JP || 
+         title_id == VINO_TITLE_ID_US ||
+         title_id == VINO_TITLE_ID_EU;
 }
 
 INITIALIZE_PLUGIN() {
@@ -322,7 +340,7 @@ DECL_FUNCTION(FSStatus, FSCloseFile_VINO, FSClient *client, FSCmdBlock *block, F
 DECL_FUNCTION(int, AcquireIndependentServiceToken__Q2_2nn3actFPcPCcUibT4, uint8_t* token, const char* client_id) 
 { // function is patched in the FSInit_Vino function
 
-    if (client_id && strcmp(client_id, VINO_CLIENT_ID) == 0 && !hasPatchedAIST) {
+    if (client_id && isVinoClientID(client_id) && !hasPatchedAIST) {
         hasPatchedAIST = true;
         DEBUG_FUNCTION_LINE("Faking service sucess for '%s' (should be Vino)", client_id);
         return 0;
