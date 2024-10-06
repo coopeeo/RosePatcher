@@ -23,6 +23,7 @@
 #include "utils/logger.h"
 
 #include "rose_config_txt.h" // included at runtime
+#include "rootca_der.h" // included at runtime
 
 WUPS_PLUGIN_NAME("Rosé Patcher");
 WUPS_PLUGIN_DESCRIPTION("Patcher for Project Rosé's Nintendo TVii revival service.");
@@ -37,6 +38,8 @@ WUPS_USE_WUT_DEVOPTAB();
 #define VINO_CLIENT_ID "87a44dad436407e4ec47ad42ed68bf8c"
 
 #define VINO_CONFIG_PATH "/vol/content/vino_config.txt"
+#define VINO_CA_PATH "/vol/content/rootca/Go_Daddy_Root_Certificate_Authority_-_G2.der"
+#define VINO_CA_2_PATH "/vol/content/rootca/Go_Daddy_Class_2_Certification_Authority.der"
 
 #define FAKE_INDEPENDANT_SERVICE_TOKEN_CONFIG_ID "fake_independant_service_token"
 #define FAKE_INDEPENDANT_SERVICE_TOKEN_DEFUALT_VALUE false
@@ -57,6 +60,7 @@ bool hasPatchedAIST = false;
 
 static std::optional<FSFileHandle> config_handle{};
 static std::optional<FSFileHandle> ca_handle{};
+static std::optional<FSFileHandle> ca2_handle{};
 
 // Settings
 bool patchAIST = FAKE_INDEPENDANT_SERVICE_TOKEN_DEFUALT_VALUE;
@@ -249,18 +253,24 @@ DECL_FUNCTION(FSStatus, FSOpenFile_VINO, FSClient *client, FSCmdBlock *block,
               FSErrorFlag errorMask) {
 
   DEBUG("Wii wants to open file: %s", path);
-  
+
   if (connectToRose && strcmp(VINO_CONFIG_PATH, path) == 0) {
     FSStatus res = real_FSOpenFile_VINO(client, block, path, mode, handle, errorMask);
     config_handle = *handle;
     return res;
   }
   
-  /*if (patchCA && strcmp(VINO_CONFIG_PATH, path) == 0) {
+  if (patchCA && strcmp(VINO_CA_PATH, path) == 0) {
     FSStatus res = real_FSOpenFile_VINO(client, block, path, mode, handle, errorMask);
-    config_handle = *handle;
+    ca_handle = *handle;
     return res;
-  }*/
+  }
+
+  if (patchCA && strcmp(VINO_CA_2_PATH, path) == 0) {
+    FSStatus res = real_FSOpenFile_VINO(client, block, path, mode, handle, errorMask);
+    ca2_handle = *handle;
+    return res;
+  }
 
   return real_FSOpenFile_VINO(client, block, path, mode, handle, errorMask);
 }
@@ -276,6 +286,19 @@ DECL_FUNCTION(FSStatus, FSReadFile_VINO, FSClient *client, FSCmdBlock *block, ui
         strlcpy((char *) buffer, (const char *) rose_config_txt, size * count);
         return (FSStatus) count;
     }
+
+    if (ca_handle && *ca_handle == handle) {
+        DEBUG_FUNCTION_LINE("Trying to read vino certificate detected, returning patched data.");
+        strlcpy((char *) buffer, (const char *) rootca_der, size * count);
+        return (FSStatus) count;
+    }
+
+    if (ca2_handle && *ca2_handle == handle) {
+        DEBUG_FUNCTION_LINE("Trying to read vino certificate 2 detected, returning patched data.");
+        strlcpy((char *) buffer, (const char *) rootca_der, size * count);
+        return (FSStatus) count;
+    }
+
     return real_FSReadFile_VINO(client, block, buffer, size, count, handle, unk1, flags);
 }
 
@@ -283,6 +306,14 @@ DECL_FUNCTION(FSStatus, FSCloseFile_VINO, FSClient *client, FSCmdBlock *block, F
     if (handle == config_handle) {
         DEBUG("Closing Vino config file and resetting handle");
         config_handle.reset();
+    }
+    if (handle == ca_handle) {
+        DEBUG("Closing Vino ca file and resetting handle");
+        ca_handle.reset();
+    }
+    if (handle == ca2_handle) {
+        DEBUG("Closing Vino ca2 file and resetting handle");
+        ca2_handle.reset();
     }
     return real_FSCloseFile_VINO(client, block, handle, errorMask);
 }
