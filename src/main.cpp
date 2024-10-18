@@ -62,7 +62,7 @@ WUPS_USE_WUT_DEVOPTAB();
 FSMountSource mSource;
 char mPath[128] = "";
 
-bool hasPatchedAIST = false;
+int hasPatchedAIST = 0;
 
 static std::optional<FSFileHandle> config_handle{};
 static std::optional<FSFileHandle> ca_handle{};
@@ -219,10 +219,11 @@ DEINITIALIZE_PLUGIN() {
 }
 
 ON_APPLICATION_START() {
+  WHBLogModuleInit();
   WHBLogUdpInit();
   WHBLogCafeInit();
 
-  hasPatchedAIST = false;
+  hasPatchedAIST = 0;
   DEBUG("Rosé Patcher: An application has started");
 }
 
@@ -234,6 +235,13 @@ DECL_FUNCTION(int32_t, _SYSSwitchTo, SysAppPFID pfid) {
   VPADReadError err;
 
   VPADRead(VPAD_CHAN_0, &status, 1, &err);
+
+  WHBLogModuleInit();
+  WHBLogUdpInit();
+  WHBLogCafeInit();
+
+  hasPatchedAIST = 0;
+  DEBUG_FUNCTION_LINE("Launching Applet via Wii U Menu");
 
   if (pfid == SYSAPP_PFID_DOWNLOAD_MANAGEMENT) {
     if (replaceDownloadManagement) {
@@ -253,6 +261,9 @@ DECL_FUNCTION(int32_t, _SYSSwitchToOverlayFromHBM, SysAppPFID pfid) {
   VPADReadError err;
 
   VPADRead(VPAD_CHAN_0, &status, 1, &err);
+
+  hasPatchedAIST = 0;
+  DEBUG_FUNCTION_LINE("Launching Applet via HBM");
 
   if (pfid == SYSAPP_PFID_DOWNLOAD_MANAGEMENT) {
     if (replaceDownloadManagement) {
@@ -337,16 +348,15 @@ DECL_FUNCTION(FSStatus, FSCloseFile_VINO, FSClient *client, FSCmdBlock *block, F
 }
 
 // Patch AcquireIndependentServiceToken to fake success for Vino (via FSInit)
-DECL_FUNCTION(int, AcquireIndependentServiceToken__Q2_2nn3actFPcPCcUibT4, uint8_t* token, const char* client_id) 
+DECL_FUNCTION(int, AcquireIndependentServiceToken__Q2_2nn3actFPcPCcUibT4_vino, uint8_t* token, const char* client_id) 
 { // function is patched in the FSInit_Vino function
 
-    if (client_id && isVinoClientID(client_id) && !hasPatchedAIST) {
-        hasPatchedAIST = true;
+    if (client_id && isVinoClientID(client_id)) {
         DEBUG_FUNCTION_LINE("Faking service sucess for '%s' (should be Vino)", client_id);
         return 0;
-    } 
+    }
 
-    return real_AcquireIndependentServiceToken__Q2_2nn3actFPcPCcUibT4(token, client_id);
+    return real_AcquireIndependentServiceToken__Q2_2nn3actFPcPCcUibT4_vino(token, client_id);
 }
 
 DECL_FUNCTION(void, FSInit_VINO)
@@ -355,6 +365,9 @@ DECL_FUNCTION(void, FSInit_VINO)
     uint32_t AISTaddressVIR = 0;
     uint32_t AISTaddress = 0;
 
+    WHBLogModuleInit();
+    WHBLogUdpInit();
+    WHBLogCafeInit();
 
     // Call the original function
     real_FSInit_VINO();
@@ -364,10 +377,14 @@ DECL_FUNCTION(void, FSInit_VINO)
         return;
     }
 
-    if (hasPatchedAIST) {
+    DEBUG_FUNCTION_LINE("FSInit_VINO has been called - hasPatchedAIST: %d", hasPatchedAIST);
+
+    if (hasPatchedAIST >= 1) {
         DEBUG_FUNCTION_LINE("FSInit_VINO has already been patched, and patched AcquireIndependentServiceToken");
         return;
     }
+
+    hasPatchedAIST += 1;
 
     // Notify about the patch
     DEBUG("Rosé Patcher: Trying to patch AcquireIndependentServiceToken via FSInit\n");
@@ -397,8 +414,10 @@ DECL_FUNCTION(void, FSInit_VINO)
                  &AISTaddress, &AISTaddressVIR);
 
     // Make function replacement data
-    function_replacement_data_t AISTpatch = REPLACE_FUNCTION_VIA_ADDRESS_FOR_PROCESS(
-      AcquireIndependentServiceToken__Q2_2nn3actFPcPCcUibT4,
+    function_replacement_data_t AISTpatch = REPLACE_FUNCTION_EX(
+      AcquireIndependentServiceToken__Q2_2nn3actFPcPCcUibT4_vino,
+      LIBRARY_OTHER,
+      "AcquireIndependentServiceToken__Q2_2nn3actFPcPCcUibT4",
       AISTaddress,
       AISTaddressVIR,
       FP_TARGET_PROCESS_TVII);

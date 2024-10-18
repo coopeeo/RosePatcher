@@ -9,6 +9,7 @@ extern "C" {
 
 #include <string.h>
 #include <whb/log.h>
+#include <whb/log_module.h>
 #include <whb/log_udp.h>
 #include <whb/log_cafe.h>
 
