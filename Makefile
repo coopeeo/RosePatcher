@@ -21,7 +21,7 @@ WUMS_ROOT := $(DEVKITPRO)/wums
 #-------------------------------------------------------------------------------
 TARGET		:=	RosePatcher
 BUILD		:=	build
-SOURCES		:=	src src/util
+SOURCES		:=	src src/utils src/patches
 DATA		:=	data
 INCLUDES	:=	src
 
@@ -38,7 +38,7 @@ CXXFLAGS	:= $(CFLAGS)
 ASFLAGS	:=	-g $(ARCH)
 LDFLAGS	=	-g $(ARCH) $(RPXSPECS) -Wl,-Map,$(notdir $*.map) $(WUPSSPECS)
 
-LIBS	:= -lwups -lnotifications -lfunctionpatcher -lwut
+LIBS	:= -lwups -lnotifications -lfunctionpatcher -lwut -lkernel
 
 #-------------------------------------------------------------------------------
 # list of directories containing libraries, this must be the top level
@@ -140,6 +140,11 @@ $(OFILES_SRC)	: $(HFILES_BIN)
 	@$(bin2o)
 
 %.der.o	%_der.h :	%.der
+#-------------------------------------------------------------------------------
+	@echo $(notdir $<)
+	@$(bin2o)
+
+%.pem.o	%_pem.h :	%.pem
 #-------------------------------------------------------------------------------
 	@echo $(notdir $<)
 	@$(bin2o)
