@@ -9,11 +9,8 @@
 #define VINO_TITLE_ID_EU 0x000500301001320A
 #define VINO_CLIENT_ID_EU "8bc9387d0797e003c3210acfae01e109"
 
-int hasPatchedAIST = 0;
-
 // Settings
 bool connectToRose = CONNECT_TO_ROSE_DEFUALT_VALUE;
-bool replaceDownloadManagement = REPLACE_DLM_DEFAULT_VALUE;
 bool tviiIconHBM = TVII_ICON_HBM_PATCH_DEFAULT_VALUE;
 bool tviiIconWUM = TVII_ICON_WUM_PATCH_DEFAULT_VALUE;
 bool needRelaunch = false;

@@ -9,16 +9,6 @@ void connectToRoseChanged(ConfigItemBoolean *item, bool newValue) {
   connectToRose = newValue;
 }
 
-// Replace Download Management setting event
-void replaceDownloadManagementChanged(ConfigItemBoolean *item, bool newValue) {
-  if (replaceDownloadManagement != newValue) {
-    WUPSStorageAPI::Store(REPLACE_DLM_CONFIG_ID, newValue);
-  }
-
-  replaceDownloadManagement = newValue;
-  needRelaunch = true;
-}
-
 void tviiIconHBMChanged(ConfigItemBoolean *item, bool newValue) {
   if (tviiIconHBM != newValue) {
     WUPSStorageAPI::Store(TVII_ICON_HBM_PATCH_COFNIG_ID, newValue);
@@ -45,19 +35,19 @@ WUPSConfigAPICallbackStatus ConfigMenuOpenedCallback(WUPSConfigCategoryHandle ro
 
   try {
     // Add setting items
+    root.add(WUPSConfigItemStub::Create("-- General --"));
     root.add(WUPSConfigItemBoolean::Create(
         CONNECT_TO_ROSE_CONFIG_ID, "Connect to Rosé",
         CONNECT_TO_ROSE_DEFUALT_VALUE, connectToRose, connectToRoseChanged));
+    root.add(WUPSConfigItemStub::Create("-- TVii Icons --"));
     root.add(WUPSConfigItemBoolean::Create(
-        REPLACE_DLM_CONFIG_ID, "Replace Download Management",
-        REPLACE_DLM_DEFAULT_VALUE, replaceDownloadManagement,
-        replaceDownloadManagementChanged));
-    root.add(WUPSConfigItemBoolean::Create(
-        TVII_ICON_HBM_PATCH_COFNIG_ID, "Add TVii Icon to the Home Menu",
+        TVII_ICON_HBM_PATCH_COFNIG_ID, "Add TVii Icon to the \ue073 Menu",
         TVII_ICON_HBM_PATCH_DEFAULT_VALUE, tviiIconHBM, tviiIconHBMChanged));
     root.add(WUPSConfigItemBoolean::Create(
         TVII_ICON_WUM_PATCH_COFNIG_ID, "Add TVii Icon to the Wii U Menu",
         TVII_ICON_WUM_PATCH_DEFAULT_VALUE, tviiIconWUM, tviiIconWUMChanged));
+    root.add(WUPSConfigItemStub::Create("Note: Wii U Menu will restart if \"Add TVii Icon to the Wii U Menu\""));
+    root.add(WUPSConfigItemStub::Create("is toggled."));
   } catch (std::exception &e) {
     DEBUG_FUNCTION_LINE("Creating config menu failed: %s", e.what());
     return WUPSCONFIG_API_CALLBACK_RESULT_ERROR;
@@ -90,12 +80,6 @@ void InitializeConfig() {
   if ((storageRes = WUPSStorageAPI::GetOrStoreDefault(
            CONNECT_TO_ROSE_CONFIG_ID, connectToRose,
            CONNECT_TO_ROSE_DEFUALT_VALUE)) != WUPS_STORAGE_ERROR_SUCCESS) {
-    DEBUG_FUNCTION_LINE("GetOrStoreDefault failed: %s (%d)",
-                        WUPSStorageAPI_GetStatusStr(storageRes), storageRes);
-  }
-  if ((storageRes = WUPSStorageAPI::GetOrStoreDefault(
-           REPLACE_DLM_CONFIG_ID, replaceDownloadManagement,
-           REPLACE_DLM_DEFAULT_VALUE)) != WUPS_STORAGE_ERROR_SUCCESS) {
     DEBUG_FUNCTION_LINE("GetOrStoreDefault failed: %s (%d)",
                         WUPSStorageAPI_GetStatusStr(storageRes), storageRes);
   }

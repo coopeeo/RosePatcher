@@ -5,7 +5,6 @@
 #include "rose_config_txt.h" // included at runtime
 
 #define VINO_CONFIG_PATH "/vol/content/vino_config.txt"
-#define HBM2_2_PACK_PATH "/vol/content/Common/Package/Hbm2-2.pack"
 
 static std::optional<FSFileHandle> config_handle{};
 

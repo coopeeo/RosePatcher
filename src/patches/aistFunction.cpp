@@ -21,12 +21,11 @@ DECL_FUNCTION(void, FSInit_VINO)
     uint32_t AISTaddress = 0;
     bool isAlreadyPatched = false;
 
+    real_FSInit_VINO();
+
     WHBLogModuleInit();
     WHBLogUdpInit();
     WHBLogCafeInit();
-
-    // Call the original function
-    real_FSInit_VINO();
 
     if (!connectToRose) {
         DEBUG_FUNCTION_LINE("AcquireIndependentServiceToken patch is disabled, skipping...");
@@ -36,16 +35,10 @@ DECL_FUNCTION(void, FSInit_VINO)
     FunctionPatcher_IsFunctionPatched(AISTpatchHandleBetter, &isAlreadyPatched);
 
     if (isAlreadyPatched == true) {
-        DEBUG_FUNCTION_LINE("FSInit_VINO has already been patched, and patched AcquireIndependentServiceToken");
-        return;
+        DEBUG_FUNCTION_LINE("FSInit_VINO has already been patched, and patched AcquireIndependentServiceToken (FAILED AT FUNCTIONPATCHER IS PATCHED CHECK)");
+        FunctionPatcher_RemoveFunctionPatch(AISTpatchHandleBetter);
+        //return;
     }
-
-    /*if (hasPatchedAIST >= 1) {
-        DEBUG_FUNCTION_LINE("FSInit_VINO has already been patched, and patched AcquireIndependentServiceToken");
-        return;
-    }
-
-    hasPatchedAIST += 1;*/
 
     // Notify about the patch
     DEBUG("Rosé Patcher: Trying to patch AcquireIndependentServiceToken via FSInit\n");
@@ -61,6 +54,7 @@ DECL_FUNCTION(void, FSInit_VINO)
       // Get the physical address
     if(OSDynLoad_FindExport(NN_ACT, OS_DYNLOAD_EXPORT_FUNC, "AcquireIndependentServiceToken__Q2_2nn3actFPcPCcUibT4", (void**)&AISTaddressVIR) != OS_DYNLOAD_OK) {
         DEBUG_FUNCTION_LINE("Failed to find AcquireIndependentServiceToken function in nn_act.rpl");
+        OSDynLoad_Release(NN_ACT);
         return;
     }
 
@@ -88,18 +82,30 @@ DECL_FUNCTION(void, FSInit_VINO)
     
     if(FunctionPatcher_AddFunctionPatch(&AISTpatch, &AISTpatchHandle, &AISTpatchSuccess) != FunctionPatcherStatus::FUNCTION_PATCHER_RESULT_SUCCESS) {
         DEBUG_FUNCTION_LINE("Failed to add patch.");
-        return;
-    }
-
-    if (AISTpatchSuccess == false) {
-        DEBUG_FUNCTION_LINE("Failed to add patch.");
+        OSDynLoad_Release(NN_ACT);
         return;
     }
 
     AISTpatchHandleBetter = AISTpatchHandle;
 
+    if (AISTpatchSuccess == false) {
+        DEBUG_FUNCTION_LINE("Failed to add patch.");
+        OSDynLoad_Release(NN_ACT);
+        return;
+    }
+
     // Notify about the patch success
     DEBUG("Patched AcquireIndependentServiceToken via FSInit");
+    OSDynLoad_Release(NN_ACT);
+}
+
+DECL_FUNCTION(void, FSInit_VINO2) {
+    real_FSInit_VINO2();
+    WHBLogModuleInit();
+    WHBLogUdpInit();
+    WHBLogCafeInit();
+    DEBUG_FUNCTION_LINE("FSInit_VINO2 has been called");
 }
 
 WUPS_MUST_REPLACE_FOR_PROCESS(FSInit_VINO, WUPS_LOADER_LIBRARY_COREINIT, FSInit, WUPS_FP_TARGET_PROCESS_TVII);
+//WUPS_MUST_REPLACE_FOR_PROCESS(FSInit_VINO2, WUPS_LOADER_LIBRARY_COREINIT, FSInit, WUPS_FP_TARGET_PROCESS_TVII);

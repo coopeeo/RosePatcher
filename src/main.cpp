@@ -13,6 +13,7 @@ WUPS_USE_WUT_DEVOPTAB();
 
 INITIALIZE_PLUGIN() {
   // Initialize libraries
+  WHBLogModuleInit();
   WHBLogUdpInit();
   WHBLogCafeInit();
   FunctionPatcher_InitLibrary();
@@ -32,6 +33,8 @@ INITIALIZE_PLUGIN() {
 }
 
 DEINITIALIZE_PLUGIN() {
+
+  WHBLogModuleDeinit();
   WHBLogUdpDeinit();
   WHBLogCafeDeinit();
   NotificationModule_DeInitLibrary();
@@ -39,11 +42,14 @@ DEINITIALIZE_PLUGIN() {
 }
 
 ON_APPLICATION_START() {
-  hasPatchedAIST = 0;
+  WHBLogModuleInit();
+  WHBLogUdpInit();
+  WHBLogCafeInit();
 
   auto title = OSGetTitleID();
-
-  if (title == 0x5001010040000 || title == 0x5001010040100 || title == 0x5001010040200) {
-        perform_men_patches(tviiIconWUM);
+  if (tviiIconWUM) {
+    if (title == 0x5001010040000 || title == 0x5001010040100 || title == 0x5001010040200) {
+      patches::perform_men_patches(true);
+    }
   }
 }
