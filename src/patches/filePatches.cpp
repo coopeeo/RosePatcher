@@ -1,4 +1,7 @@
-#include "../main.hpp"
+#include <wups.h>
+#include <coreinit/filesystem.h>
+
+#include "../config.hpp"
 #include "../utils/Notification.hpp"
 #include "../utils/logger.h"
 
@@ -12,9 +15,9 @@ DECL_FUNCTION(FSStatus, FSOpenFile_VINO, FSClient *client, FSCmdBlock *block,
               const char *path, const char *mode, FSFileHandle *handle,
               FSErrorFlag errorMask) {
 
-    DEBUG("Wii U wants to open file: %s", path);
+    // DEBUG("Wii U wants to open file: %s", path);
 
-    if (connectToRose && strcmp(VINO_CONFIG_PATH, path) == 0) {
+    if (config::connectToRose && strcmp(VINO_CONFIG_PATH, path) == 0) {
         FSStatus res = real_FSOpenFile_VINO(client, block, path, mode, handle, errorMask);
         config_handle = *handle;
         return res;

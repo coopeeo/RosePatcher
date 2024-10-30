@@ -1,12 +1,22 @@
-#include "../main.hpp"
+#include <wups.h>
+
+#include <coreinit/dynload.h>
+#include <coreinit/filesystem.h>
+#include <coreinit/title.h>
+#include <coreinit/memorymap.h>
+
+#include <function_patcher/function_patching.h>
+
+#include "../config.hpp"
 #include "../utils/Notification.hpp"
 #include "../utils/logger.h"
+#include "../utils/utils.hpp"
 
 PatchedFunctionHandle AISTpatchHandleBetter = 0;
 
 DECL_FUNCTION(int, AcquireIndependentServiceToken__Q2_2nn3actFPcPCcUibT4, uint8_t* token, const char* client_id) {
 
-    if (client_id && isVinoClientID(client_id) && connectToRose) {
+    if (client_id && utils::isVinoClientID(client_id) && config::connectToRose) {
         DEBUG_FUNCTION_LINE("Faking service sucess for '%s' (should be Vino)", client_id);
         return 0;
     }
@@ -20,28 +30,32 @@ DECL_FUNCTION(void, FSInit_VINO)
     uint32_t AISTaddressVIR = 0;
     uint32_t AISTaddress = 0;
     bool isAlreadyPatched = false;
+    PatchedFunctionHandle AISTpatchHandle = 0;
+    bool AISTpatchSuccess = false;
 
+
+    // Call the original function
     real_FSInit_VINO();
 
+    // Init Logging Functions
     WHBLogModuleInit();
     WHBLogUdpInit();
     WHBLogCafeInit();
 
-    if (!connectToRose) {
-        DEBUG_FUNCTION_LINE("AcquireIndependentServiceToken patch is disabled, skipping...");
+    // Notify about the patch
+    // DEBUG("Rosé Patcher: Trying to patch AcquireIndependentServiceToken via FSInit\n");
+
+    if (!config::connectToRose) {
+        DEBUG_FUNCTION_LINE("\"Connect to Rosé\" patch is disabled, skipping...");
         return;
     }
 
     FunctionPatcher_IsFunctionPatched(AISTpatchHandleBetter, &isAlreadyPatched);
 
     if (isAlreadyPatched == true) {
-        DEBUG_FUNCTION_LINE("FSInit_VINO has already been patched, and patched AcquireIndependentServiceToken (FAILED AT FUNCTIONPATCHER IS PATCHED CHECK)");
+        //DEBUG_FUNCTION_LINE("AcquireIndependentServiceToken is already patched, removing patch.");
         FunctionPatcher_RemoveFunctionPatch(AISTpatchHandleBetter);
-        //return;
     }
-
-    // Notify about the patch
-    DEBUG("Rosé Patcher: Trying to patch AcquireIndependentServiceToken via FSInit\n");
 
     // Acquire the nn_act module
     if(OSDynLoad_Acquire("nn_act.rpl", &NN_ACT) != OS_DYNLOAD_OK) {
@@ -49,24 +63,20 @@ DECL_FUNCTION(void, FSInit_VINO)
         return;
     }
 
-    // Find the AcquireIndependentServiceToken function (well their addresses)
-
-      // Get the physical address
-    if(OSDynLoad_FindExport(NN_ACT, OS_DYNLOAD_EXPORT_FUNC, "AcquireIndependentServiceToken__Q2_2nn3actFPcPCcUibT4", (void**)&AISTaddressVIR) != OS_DYNLOAD_OK) {
+    // Find the AcquireIndependentServiceToken function addresses
+    if(OSDynLoad_FindExport(NN_ACT, OS_DYNLOAD_EXPORT_FUNC, "AcquireIndependentServiceToken__Q2_2nn3actFPcPCcUibT4", (void**)&AISTaddressVIR) != OS_DYNLOAD_OK) { // Get the physical address
         DEBUG_FUNCTION_LINE("Failed to find AcquireIndependentServiceToken function in nn_act.rpl");
         OSDynLoad_Release(NN_ACT);
         return;
     }
+    AISTaddress = OSEffectiveToPhysical(AISTaddressVIR); // Get the virtual address
 
-      // Get the virtual address
-    AISTaddress = OSEffectiveToPhysical(AISTaddressVIR);
-
-    // Print the results of physical and virtual addresses from the AcquireIndependentServiceToken__Q2_2nn3actFPcPCcUibT4 function
-    DEBUG("AcquireIndependentServiceToken__Q2_2nn3actFPcPCcUibT4 results\n"
-                 "Rosé Patcher:   Physical Address: %d\n"
-                 "Rosé Patcher:   Virtual Address: %d\n"
-                 "Rosé Patcher: -- END OF AcquireIndependentServiceToken ADDRESS RESULTS --",
-                 &AISTaddress, &AISTaddressVIR);
+    // Show results of the AcquireIndependentServiceToken function address findings
+    // DEBUG("AcquireIndependentServiceToken__Q2_2nn3actFPcPCcUibT4 results\n"
+                 // "Rosé Patcher:   Physical Address: %d\n"
+                 // "Rosé Patcher:   Virtual Address: %d\n"
+                 // "Rosé Patcher: -- END OF AcquireIndependentServiceToken ADDRESS RESULTS --",
+                 // &AISTaddress, &AISTaddressVIR);
 
     // Make function replacement data
     function_replacement_data_t AISTpatch = REPLACE_FUNCTION_VIA_ADDRESS_FOR_PROCESS(
@@ -76,10 +86,6 @@ DECL_FUNCTION(void, FSInit_VINO)
       FP_TARGET_PROCESS_TVII);
 
     // Patch the function
-    PatchedFunctionHandle AISTpatchHandle = 0;
-
-    bool AISTpatchSuccess = false;
-    
     if(FunctionPatcher_AddFunctionPatch(&AISTpatch, &AISTpatchHandle, &AISTpatchSuccess) != FunctionPatcherStatus::FUNCTION_PATCHER_RESULT_SUCCESS) {
         DEBUG_FUNCTION_LINE("Failed to add patch.");
         OSDynLoad_Release(NN_ACT);
@@ -99,13 +105,4 @@ DECL_FUNCTION(void, FSInit_VINO)
     OSDynLoad_Release(NN_ACT);
 }
 
-DECL_FUNCTION(void, FSInit_VINO2) {
-    real_FSInit_VINO2();
-    WHBLogModuleInit();
-    WHBLogUdpInit();
-    WHBLogCafeInit();
-    DEBUG_FUNCTION_LINE("FSInit_VINO2 has been called");
-}
-
 WUPS_MUST_REPLACE_FOR_PROCESS(FSInit_VINO, WUPS_LOADER_LIBRARY_COREINIT, FSInit, WUPS_FP_TARGET_PROCESS_TVII);
-//WUPS_MUST_REPLACE_FOR_PROCESS(FSInit_VINO2, WUPS_LOADER_LIBRARY_COREINIT, FSInit, WUPS_FP_TARGET_PROCESS_TVII);
