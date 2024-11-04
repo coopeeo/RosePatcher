@@ -1,9 +1,10 @@
-name: Build Plugin
+name: Build Rosé Plugin for development and checks
 
 on: push
 
 jobs:
-    build-inkay:
+    build-plugin:
+        name: Build Rosé Plugin
         runs-on: ubuntu-22.04
         steps:
             - uses: actions/checkout@v2
