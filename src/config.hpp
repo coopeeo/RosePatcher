@@ -14,8 +14,11 @@
 #define TVII_ICON_HBM_PATCH_COFNIG_ID "tvii_icon_hbm_patch"
 #define TVII_ICON_HBM_PATCH_DEFAULT_VALUE true
 
-#define TVII_ICON_WUM_PATCH_COFNIG_ID "tvii_icon_WUM_patch"
+#define TVII_ICON_WUM_PATCH_COFNIG_ID "tvii_icon_wum_patch"
 #define TVII_ICON_WUM_PATCH_DEFAULT_VALUE true
+
+#define FORCE_JPN_CONSOLE_CONFIG_ID "force_jpn_console"
+#define FORCE_JPN_CONSOLE_DEFAULT_VALUE false
 
 
 
@@ -25,6 +28,7 @@ namespace config {
     extern bool tviiIconHBM;
     extern bool tviiIconWUM;
     extern bool needRelaunch;
+    extern bool forceJPNconsole;
 
     void connectToRoseChanged(ConfigItemBoolean *item, bool newValue);
     void tviiIconHBMChanged(ConfigItemBoolean *item, bool newValue);

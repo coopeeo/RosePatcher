@@ -14,4 +14,4 @@ namespace patches::icon {
     void perform_men_patches(bool enable);
 
     void perform_hbm_patches(bool enable);
-} // namespace icon
+}; // namespace icon

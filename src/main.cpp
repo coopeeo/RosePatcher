@@ -39,6 +39,7 @@ INITIALIZE_PLUGIN() {
 }
 
 DEINITIALIZE_PLUGIN() {
+  patches::icon::perform_hbm_patches(false);
 
   WHBLogModuleDeinit();
   WHBLogUdpDeinit();

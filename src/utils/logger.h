@@ -3,10 +3,6 @@
 
 #pragma once
 
-#ifdef __cplusplus
-extern "C" {
-#endif
-
 #include <string.h>
 #include <whb/log.h>
 #include <whb/log_module.h>
@@ -35,7 +31,3 @@ extern "C" {
 #define DEBUG_WRITE(FMT, ARGS...)do { \
     WHBLogWritef("Rosé Patcher - Debug: " FMT "", ## ARGS); \
     } while (0);
-
-#ifdef __cplusplus
-}
-#endif

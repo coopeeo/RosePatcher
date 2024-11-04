@@ -15,7 +15,6 @@
 #include "logger.h"
 
 namespace utils::patch {
-
     OSDynLoad_NotifyData men_rpx;
     OSDynLoad_NotifyData hbm_rpx;
 
@@ -33,7 +32,7 @@ namespace utils::patch {
                         size_t original_val_sz, const char *new_val, size_t new_val_sz) {
         uint32_t addr = find_mem(start, size, original_val, original_val_sz);
         if (addr) {
-            DEBUG_FUNCTION_LINE("replace: writing to %08X (%s) with %s\n", addr,
+            DEBUG_FUNCTION_LINE("replace: writing to %08X (%s) with %s", addr,
                                 original_val, new_val);
             KernelCopyData(OSEffectiveToPhysical(addr),
                         OSEffectiveToPhysical((uint32_t) new_val), new_val_sz);
@@ -48,7 +47,7 @@ namespace utils::patch {
         if (current != original)
             return current == replacement;
 
-        DEBUG_FUNCTION_LINE("patch_instruction: writing to %08X (%08X) with %08X\n",
+        DEBUG_FUNCTION_LINE("patch_instruction: writing to %08X (%08X) with %08X",
                             (uint32_t) instr, current, replacement);
 
         KernelCopyData(OSEffectiveToPhysical((uint32_t) instr),
@@ -79,7 +78,7 @@ namespace utils::patch {
     bool get_rpl_info(std::vector<OSDynLoad_NotifyData> &rpls) {
         int num_rpls = OSDynLoad_GetNumberOfRPLs();
 
-        DEBUG_FUNCTION_LINE("get_rpl_info: %d RPL(s) running\n", num_rpls);
+        DEBUG_FUNCTION_LINE("get_rpl_info: %d RPL(s) running", num_rpls);
 
         if (num_rpls == 0) {
             return false;
@@ -94,17 +93,17 @@ namespace utils::patch {
 
     bool find_rpl(OSDynLoad_NotifyData &found_rpl, const std::string &name) {
         if (!patch_dynload_instructions()) {
-            DEBUG_FUNCTION_LINE("find_rpl: failed to patch dynload functions\n");
+            DEBUG_FUNCTION_LINE("find_rpl: failed to patch dynload functions");
             return false;
         }
 
         std::vector<OSDynLoad_NotifyData> rpl_info;
         if (!get_rpl_info(rpl_info)) {
-            DEBUG_FUNCTION_LINE("find_rpl: failed to get rpl info\n");
+            DEBUG_FUNCTION_LINE("find_rpl: failed to get rpl info");
             return false;
         }
 
-        DEBUG_FUNCTION_LINE("find_rpl: got rpl info\n");
+        DEBUG_FUNCTION_LINE("find_rpl: got rpl info");
 
         for (const auto &rpl : rpl_info) {
             if (rpl.name == nullptr || rpl.name[0] == '\0') {
@@ -112,7 +111,7 @@ namespace utils::patch {
             }
             if (std::string_view(rpl.name).ends_with(name)) {
                 found_rpl = rpl;
-                DEBUG_FUNCTION_LINE("find_rpl: found rpl %s\n", name.c_str());
+                DEBUG_FUNCTION_LINE("find_rpl: found rpl %s", name.c_str());
                 return true;
             }
         }
@@ -120,4 +119,4 @@ namespace utils::patch {
         return false;
     }
     
-} // namespace patch
+}; // namespace patch

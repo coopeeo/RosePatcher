@@ -4,6 +4,7 @@
 #include "../config.hpp"
 #include "../utils/Notification.hpp"
 #include "../utils/logger.h"
+#include "../utils/patch.hpp"
 
 #include "rose_config_txt.h" // included at runtime
 

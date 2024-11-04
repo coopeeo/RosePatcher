@@ -4,19 +4,30 @@
 #include <coreinit/filesystem.h>
 #include <coreinit/title.h>
 #include <coreinit/memorymap.h>
+#include <nsysnet/nssl.h>
 
 #include <function_patcher/function_patching.h>
+#include <notifications/notifications.h>
 
+#include "ssl.hpp"
 #include "../config.hpp"
 #include "../utils/Notification.hpp"
 #include "../utils/logger.h"
 #include "../utils/utils.hpp"
+#include "../utils/patch.hpp"
 
 PatchedFunctionHandle AISTpatchHandleBetter = 0;
+int AISTCallCount = 0;
 
 DECL_FUNCTION(int, AcquireIndependentServiceToken__Q2_2nn3actFPcPCcUibT4, uint8_t* token, const char* client_id) {
 
     if (client_id && utils::isVinoClientID(client_id) && config::connectToRose) {
+        AISTCallCount++;
+        if (AISTCallCount >= 2) {
+            FunctionPatcher_RemoveFunctionPatch(AISTpatchHandleBetter);
+            AISTCallCount = 0;
+        }
+        patches::ssl::addCertificateToWebKit();
         DEBUG_FUNCTION_LINE("Faking service sucess for '%s' (should be Vino)", client_id);
         return 0;
     }
@@ -24,7 +35,7 @@ DECL_FUNCTION(int, AcquireIndependentServiceToken__Q2_2nn3actFPcPCcUibT4, uint8_
     return real_AcquireIndependentServiceToken__Q2_2nn3actFPcPCcUibT4(token, client_id);
 }
 
-DECL_FUNCTION(void, FSInit_VINO)
+DECL_FUNCTION(void, NSSLInit)
 {
     OSDynLoad_Module NN_ACT = 0;
     uint32_t AISTaddressVIR = 0;
@@ -33,9 +44,8 @@ DECL_FUNCTION(void, FSInit_VINO)
     PatchedFunctionHandle AISTpatchHandle = 0;
     bool AISTpatchSuccess = false;
 
-
     // Call the original function
-    real_FSInit_VINO();
+    real_NSSLInit();
 
     // Init Logging Functions
     WHBLogModuleInit();
@@ -43,18 +53,18 @@ DECL_FUNCTION(void, FSInit_VINO)
     WHBLogCafeInit();
 
     // Notify about the patch
-    // DEBUG("Rosé Patcher: Trying to patch AcquireIndependentServiceToken via FSInit\n");
-
-    if (!config::connectToRose) {
-        DEBUG_FUNCTION_LINE("\"Connect to Rosé\" patch is disabled, skipping...");
-        return;
-    }
+    // DEBUG("Rosé Patcher: Trying to patch AcquireIndependentServiceToken via NSSLInit\n");
 
     FunctionPatcher_IsFunctionPatched(AISTpatchHandleBetter, &isAlreadyPatched);
 
     if (isAlreadyPatched == true) {
-        //DEBUG_FUNCTION_LINE("AcquireIndependentServiceToken is already patched, removing patch.");
+        AISTCallCount = 0;
         FunctionPatcher_RemoveFunctionPatch(AISTpatchHandleBetter);
+    }
+
+    if (!config::connectToRose) {
+        DEBUG_FUNCTION_LINE("\"Connect to Rosé\" patch is disabled, skipping...");
+        return;
     }
 
     // Acquire the nn_act module
@@ -101,8 +111,8 @@ DECL_FUNCTION(void, FSInit_VINO)
     }
 
     // Notify about the patch success
-    DEBUG("Patched AcquireIndependentServiceToken via FSInit");
+    DEBUG("Patched AcquireIndependentServiceToken via NSSLInit");
     OSDynLoad_Release(NN_ACT);
 }
 
-WUPS_MUST_REPLACE_FOR_PROCESS(FSInit_VINO, WUPS_LOADER_LIBRARY_COREINIT, FSInit, WUPS_FP_TARGET_PROCESS_TVII);
+WUPS_MUST_REPLACE_FOR_PROCESS(NSSLInit, WUPS_LOADER_LIBRARY_NSYSNET, NSSLInit, WUPS_FP_TARGET_PROCESS_TVII);

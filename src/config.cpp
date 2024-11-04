@@ -11,6 +11,7 @@
 #include <sysapp/launch.h>
 
 #include "config.hpp"
+#include "utils/utils.hpp"
 #include "utils/logger.h"
 
 namespace config {
@@ -18,6 +19,7 @@ namespace config {
   bool connectToRose = CONNECT_TO_ROSE_DEFUALT_VALUE;
   bool tviiIconHBM = TVII_ICON_HBM_PATCH_DEFAULT_VALUE;
   bool tviiIconWUM = TVII_ICON_WUM_PATCH_DEFAULT_VALUE;
+  bool forceJPNconsole = FORCE_JPN_CONSOLE_DEFAULT_VALUE;
   bool needRelaunch = false;
 
   // Connect to Rose setting event
@@ -44,7 +46,7 @@ namespace config {
 
     tviiIconWUM = newValue;
     auto title = OSGetTitleID();
-    if (title == 0x5001010040000 || title == 0x5001010040100 || title == 0x5001010040200) {
+    if (utils::isWiiUMenuTitleID(title, false)) {
       needRelaunch = true;
     }
   }
@@ -56,18 +58,15 @@ namespace config {
     try {
       // Add setting items
       root.add(WUPSConfigItemStub::Create("-- General --"));
-      root.add(WUPSConfigItemBoolean::Create(
-          CONNECT_TO_ROSE_CONFIG_ID, "Connect to Rosé",
-          CONNECT_TO_ROSE_DEFUALT_VALUE, connectToRose, connectToRoseChanged));
-      root.add(WUPSConfigItemStub::Create("-- TVii Icons --"));
-      root.add(WUPSConfigItemBoolean::Create(
-          TVII_ICON_HBM_PATCH_COFNIG_ID, "Add TVii Icon to the \ue073 Menu",
-          TVII_ICON_HBM_PATCH_DEFAULT_VALUE, tviiIconHBM, tviiIconHBMChanged));
-      root.add(WUPSConfigItemBoolean::Create(
-          TVII_ICON_WUM_PATCH_COFNIG_ID, "Add TVii Icon to the Wii U Menu",
-          TVII_ICON_WUM_PATCH_DEFAULT_VALUE, tviiIconWUM, tviiIconWUMChanged));
-      root.add(WUPSConfigItemStub::Create("Note: Wii U Menu will restart if \"Add TVii Icon to the Wii U Menu\""));
-      root.add(WUPSConfigItemStub::Create("is toggled."));
+      root.add(WUPSConfigItemBoolean::Create(CONNECT_TO_ROSE_CONFIG_ID, "Connect to Rosé", CONNECT_TO_ROSE_DEFUALT_VALUE, connectToRose, connectToRoseChanged));
+      
+      if (!utils::isJapanConsole()) {
+        root.add(WUPSConfigItemStub::Create("-- TVii Icons --"));
+        root.add(WUPSConfigItemBoolean::Create(TVII_ICON_HBM_PATCH_COFNIG_ID, "Add TVii Icon to the \ue073 Menu", TVII_ICON_HBM_PATCH_DEFAULT_VALUE, tviiIconHBM, tviiIconHBMChanged));
+        root.add(WUPSConfigItemBoolean::Create(TVII_ICON_WUM_PATCH_COFNIG_ID, "Add TVii Icon to the Wii U Menu", TVII_ICON_WUM_PATCH_DEFAULT_VALUE, tviiIconWUM, tviiIconWUMChanged));
+        root.add(WUPSConfigItemStub::Create("Note: Wii U Menu will restart if \"Add TVii Icon to the Wii U Menu\""));
+        root.add(WUPSConfigItemStub::Create("is toggled."));
+      }
     } catch (std::exception &e) {
       DEBUG_FUNCTION_LINE("Creating config menu failed: %s", e.what());
       return WUPSCONFIG_API_CALLBACK_RESULT_ERROR;
@@ -97,23 +96,19 @@ namespace config {
 
     // Add get saved values
     WUPSStorageError storageRes;
-    if ((storageRes = WUPSStorageAPI::GetOrStoreDefault(
-            CONNECT_TO_ROSE_CONFIG_ID, connectToRose,
-            CONNECT_TO_ROSE_DEFUALT_VALUE)) != WUPS_STORAGE_ERROR_SUCCESS) {
-      DEBUG_FUNCTION_LINE("GetOrStoreDefault failed: %s (%d)",
-                          WUPSStorageAPI_GetStatusStr(storageRes), storageRes);
+    if ((storageRes = WUPSStorageAPI::GetOrStoreDefault(CONNECT_TO_ROSE_CONFIG_ID, connectToRose, CONNECT_TO_ROSE_DEFUALT_VALUE)) != WUPS_STORAGE_ERROR_SUCCESS) {
+      DEBUG_FUNCTION_LINE("GetOrStoreDefault failed: %s (%d)", WUPSStorageAPI_GetStatusStr(storageRes), storageRes);
     }
-    if ((storageRes = WUPSStorageAPI::GetOrStoreDefault(
-            TVII_ICON_HBM_PATCH_COFNIG_ID, tviiIconHBM,
-            TVII_ICON_HBM_PATCH_DEFAULT_VALUE)) != WUPS_STORAGE_ERROR_SUCCESS) {
-      DEBUG_FUNCTION_LINE("GetOrStoreDefault failed: %s (%d)",
-                          WUPSStorageAPI_GetStatusStr(storageRes), storageRes);
+    if ((storageRes = WUPSStorageAPI::GetOrStoreDefault(TVII_ICON_HBM_PATCH_COFNIG_ID, tviiIconHBM, TVII_ICON_HBM_PATCH_DEFAULT_VALUE)) != WUPS_STORAGE_ERROR_SUCCESS) {
+      DEBUG_FUNCTION_LINE("GetOrStoreDefault failed: %s (%d)", WUPSStorageAPI_GetStatusStr(storageRes), storageRes);
     }
-    if ((storageRes = WUPSStorageAPI::GetOrStoreDefault(
-            TVII_ICON_WUM_PATCH_COFNIG_ID, tviiIconWUM,
-            TVII_ICON_WUM_PATCH_DEFAULT_VALUE)) != WUPS_STORAGE_ERROR_SUCCESS) {
-      DEBUG_FUNCTION_LINE("GetOrStoreDefault failed: %s (%d)",
-                          WUPSStorageAPI_GetStatusStr(storageRes), storageRes);
+    if ((storageRes = WUPSStorageAPI::GetOrStoreDefault(TVII_ICON_WUM_PATCH_COFNIG_ID, tviiIconWUM, TVII_ICON_WUM_PATCH_DEFAULT_VALUE)) != WUPS_STORAGE_ERROR_SUCCESS) {
+      DEBUG_FUNCTION_LINE("GetOrStoreDefault failed: %s (%d)", WUPSStorageAPI_GetStatusStr(storageRes), storageRes);
+    }
+    
+    // For when we can't detect someones console region and their console region is actually Japan
+    if ((storageRes = WUPSStorageAPI::GetOrStoreDefault(FORCE_JPN_CONSOLE_CONFIG_ID, forceJPNconsole, FORCE_JPN_CONSOLE_DEFAULT_VALUE)) != WUPS_STORAGE_ERROR_SUCCESS) {
+      DEBUG_FUNCTION_LINE("GetOrStoreDefault failed: %s (%d)", WUPSStorageAPI_GetStatusStr(storageRes), storageRes);
     }
   }
 
