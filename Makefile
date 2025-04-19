@@ -40,9 +40,6 @@ LDFLAGS	=	-g $(ARCH) $(RPXSPECS) -Wl,-Map,$(notdir $*.map) -T$(WUMS_ROOT)/share/
 
 LIBS	:= -lwups -lnotifications -lfunctionpatcher -lwut -lkernel
 
-ifneq (,$(wildcard ./$(DATA)/proxy.der))
-CFLAGS += -DPROXY_CERT
-endif
 #-------------------------------------------------------------------------------
 # list of directories containing libraries, this must be the top level
 # containing include and lib
