@@ -3,7 +3,8 @@
         "defaultIncludePath": [
             "${workspaceFolder}/build/**",
             "${workspaceFolder}/include/**",
-            "${workspaceFolder}/source/**"
+            "${workspaceFolder}/source/**",
+            "${workspaceFolder}/src/**"
         ],
         "defaultDefines": [],
         "DEVKITPROWIN": "C:/devkitPro",

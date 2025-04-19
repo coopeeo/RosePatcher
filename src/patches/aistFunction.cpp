@@ -23,10 +23,7 @@ DECL_FUNCTION(int, AcquireIndependentServiceToken__Q2_2nn3actFPcPCcUibT4, uint8_
 
     if (client_id && utils::isVinoClientID(client_id) && config::connectToRose) {
         AISTCallCount++;
-        if (AISTCallCount >= 2) {
-            FunctionPatcher_RemoveFunctionPatch(AISTpatchHandleBetter);
-            AISTCallCount = 0;
-        }
+        DEBUG_FUNCTION_LINE("AISTCallCount is %d!", AISTCallCount);
         patches::ssl::addCertificateToWebKit();
         DEBUG_FUNCTION_LINE("Faking service sucess for '%s' (should be Vino)", client_id);
         return 0;
@@ -53,13 +50,21 @@ DECL_FUNCTION(void, NSSLInit)
     WHBLogCafeInit();
 
     // Notify about the patch
-    // DEBUG("Rosé Patcher: Trying to patch AcquireIndependentServiceToken via NSSLInit\n");
+    DEBUG("Rosé Patcher: Trying to patch AcquireIndependentServiceToken via NSSLInit\n");
 
     FunctionPatcher_IsFunctionPatched(AISTpatchHandleBetter, &isAlreadyPatched);
 
-    if (isAlreadyPatched == true) {
+    DEBUG_FUNCTION_LINE("AISTCallCount is %d!", AISTCallCount);
+
+    if (AISTCallCount >= 3) {
+        DEBUG_FUNCTION_LINE("AISTCallCount is %d, removing patch...", AISTCallCount);
         AISTCallCount = 0;
         FunctionPatcher_RemoveFunctionPatch(AISTpatchHandleBetter);
+    } else if (isAlreadyPatched == true) {
+        DEBUG_FUNCTION_LINE("AISTCallCount is %d, but we got true of isalreadypatched so return.", AISTCallCount);
+        AISTCallCount = 0;
+        FunctionPatcher_RemoveFunctionPatch(AISTpatchHandleBetter);
+        //return;
     }
 
     if (!config::connectToRose) {
