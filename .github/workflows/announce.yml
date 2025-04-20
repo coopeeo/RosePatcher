@@ -1,0 +1,25 @@
+name: Announce New Release
+
+on:
+  release:
+    types: [published]
+
+jobs:
+  post:
+    name: Send Announcement
+    runs-on: ubuntu-latest
+    steps:
+      - name: Announce
+        shell: bash
+        run: |
+          curl \
+            -H "Content-Type: application/json" \
+            -d "# Rosé Patcher ${{ github.event.release.tag_name }}
+                -# A new version has been released!
+
+                ${{ github.event.release.body }}
+
+                ${{ github.event.release.html_url }}
+                ||<@${{ secrets.ROLE_ID }}>||" \
+            ${{ secrets.WEBHOOK_URL }}
+          
